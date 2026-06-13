@@ -1,0 +1,62 @@
+name: CalendarWidget
+options:
+  bundleIdPrefix: com.harshilchordia
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  CalendarWidget:
+    type: application
+    platform: macOS
+    sources:
+      - path: CalendarWidget
+        type: group
+      - path: Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.harshilchordia.CalendarWidget
+        INFOPLIST_FILE: CalendarWidget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CalendarWidget/CalendarWidget.entitlements
+        PRODUCT_NAME: Calendar Widget
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_NSCalendarsUsageDescription: "Calendar Widget needs access to your calendars to display events on the widget."
+    dependencies:
+      - target: CalendarWidgetExtension
+        embed: true
+        codeSign: true
+
+  CalendarWidgetExtension:
+    type: app-extension
+    platform: macOS
+    product: CalendarWidgetExtension.appex
+    sources:
+      - path: CalendarWidgetExtension
+        type: group
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.harshilchordia.CalendarWidget.CalendarWidgetExtension
+        INFOPLIST_FILE: CalendarWidgetExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CalendarWidgetExtension/CalendarWidgetExtension.entitlements
+        PRODUCT_NAME: CalendarWidgetExtension
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_NSCalendarsUsageDescription: "Calendar Widget needs access to your calendars to display events on the widget."
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
+    dependencies:
+      - framework: WidgetKit.framework
+        embed: false
+      - framework: SwiftUI.framework
+        embed: false
+      - framework: EventKit.framework
+        embed: false
