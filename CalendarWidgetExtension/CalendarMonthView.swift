@@ -18,9 +18,26 @@ struct CalendarMonthView: View {
     }
 
     private var headerView: some View {
-        Text(monthYearString)
-            .font(.system(size: 13, weight: .semibold))
-            .frame(maxWidth: .infinity, alignment: .leading)
+        HStack {
+            Button(intent: ChangeMonthIntent(offset: -1)) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            Text(monthYearString)
+                .font(.system(size: 13, weight: .semibold))
+
+            Spacer()
+
+            Button(intent: ChangeMonthIntent(offset: 1)) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     private var weekdayHeaderView: some View {
@@ -133,11 +150,35 @@ struct CalendarFullMonthView: View {
     }
 
     private var monthHeader: some View {
-        Text(monthYearString)
-            .font(.system(size: headerSize, weight: .bold))
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, 10)
+        HStack {
+            Button(intent: ChangeMonthIntent(offset: -1)) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+
+            Text(monthYearString)
+                .font(.system(size: headerSize, weight: .bold))
+                .foregroundColor(.white)
+
+            Button(intent: ChangeMonthIntent(offset: 1)) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            Button(intent: ResetMonthIntent()) {
+                Text("Today")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.white.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.bottom, 4)
     }
 
     private var weekdayHeader: some View {
@@ -149,28 +190,36 @@ struct CalendarFullMonthView: View {
                     .frame(maxWidth: .infinity)
             }
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, 3)
     }
 
     private var weeksGrid: some View {
         let weeks = computeWeeks()
-        return VStack(spacing: 0) {
-            ForEach(0..<weeks.count, id: \.self) { weekIndex in
-                HStack(spacing: 0) {
-                    ForEach(0..<7, id: \.self) { dayIndex in
-                        let dayItem = weeks[weekIndex][dayIndex]
-                        dayCellFull(dayItem)
-                        if dayIndex < 6 {
-                            Rectangle()
-                                .fill(gridLineColor)
-                                .frame(width: 0.5)
+        return GeometryReader { geo in
+            let rowCount = CGFloat(weeks.count)
+            let separatorTotal = (rowCount - 1) * 0.5
+            let rowHeight = (geo.size.height - separatorTotal) / rowCount
+
+            VStack(spacing: 0) {
+                ForEach(0..<weeks.count, id: \.self) { weekIndex in
+                    HStack(spacing: 0) {
+                        ForEach(0..<7, id: \.self) { dayIndex in
+                            let dayItem = weeks[weekIndex][dayIndex]
+                            dayCellFull(dayItem)
+                                .frame(height: rowHeight)
+                                .clipped()
+                            if dayIndex < 6 {
+                                Rectangle()
+                                    .fill(gridLineColor)
+                                    .frame(width: 0.5, height: rowHeight)
+                            }
                         }
                     }
-                }
-                if weekIndex < weeks.count - 1 {
-                    Rectangle()
-                        .fill(gridLineColor)
-                        .frame(height: 0.5)
+                    if weekIndex < weeks.count - 1 {
+                        Rectangle()
+                            .fill(gridLineColor)
+                            .frame(height: 0.5)
+                    }
                 }
             }
         }
@@ -178,43 +227,53 @@ struct CalendarFullMonthView: View {
 
     @ViewBuilder
     private func dayCellFull(_ dayItem: DayItem) -> some View {
-        VStack(alignment: .center, spacing: 2) {
-            // Day number
-            Group {
-                if dayItem.day != 0 {
-                    if dayItem.isToday {
-                        Text("\(dayItem.day)")
-                            .font(.system(size: dayNumberSize, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: todayCircleSize, height: todayCircleSize)
-                            .background(Circle().fill(todayColor))
+        GeometryReader { geo in
+            let dayHeight: CGFloat = todayCircleSize + 4
+            let eventsHeight = max(0, geo.size.height - dayHeight)
+
+            VStack(alignment: .center, spacing: 0) {
+                // Day number - always visible at top
+                Group {
+                    if dayItem.day != 0 {
+                        if dayItem.isToday {
+                            Text("\(dayItem.day)")
+                                .font(.system(size: dayNumberSize, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: todayCircleSize, height: todayCircleSize)
+                                .background(Circle().fill(todayColor))
+                        } else {
+                            Text("\(dayItem.day)")
+                                .font(.system(size: dayNumberSize, weight: .regular))
+                                .foregroundColor(.white.opacity(0.9))
+                                .frame(height: todayCircleSize)
+                        }
                     } else {
-                        Text("\(dayItem.day)")
-                            .font(.system(size: dayNumberSize, weight: .regular))
-                            .foregroundColor(.white.opacity(0.9))
-                            .frame(height: todayCircleSize)
+                        Color.clear.frame(height: todayCircleSize)
                     }
-                } else {
-                    Color.clear.frame(height: todayCircleSize)
                 }
-            }
-            .padding(.top, 4)
+                .padding(.top, 2)
+                .frame(height: dayHeight)
 
-            // Events for this day
-            if dayItem.day != 0, let events = eventsByDay[dayItem.day] {
-                ForEach(events.prefix(maxEventsPerCell)) { event in
-                    eventCard(event)
+                // Events for this day - constrained to remaining space
+                if dayItem.day != 0, let events = eventsByDay[dayItem.day] {
+                    VStack(spacing: 1) {
+                        ForEach(events.prefix(maxEventsPerCell)) { event in
+                            eventCard(event)
+                        }
+                        if events.count > maxEventsPerCell {
+                            Text("+\(events.count - maxEventsPerCell) more")
+                                .font(.system(size: eventTimeSize))
+                                .foregroundColor(.white.opacity(0.5))
+                        }
+                    }
+                    .frame(maxHeight: eventsHeight, alignment: .top)
+                    .clipped()
                 }
-                if events.count > maxEventsPerCell {
-                    Text("+\(events.count - maxEventsPerCell) more")
-                        .font(.system(size: eventTimeSize))
-                        .foregroundColor(.white.opacity(0.5))
-                }
-            }
 
-            Spacer(minLength: 0)
+                Spacer(minLength: 0)
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private func eventCard(_ event: SimpleEvent) -> some View {

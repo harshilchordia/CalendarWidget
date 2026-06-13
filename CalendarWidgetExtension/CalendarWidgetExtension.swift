@@ -47,7 +47,7 @@ struct CalendarWidgetEntryView: View {
             eventsByDay: entry.eventsByDay,
             compact: false
         )
-        .padding(6)
+        .padding(0)
     }
 
     private var extraLargeWidget: some View {
@@ -56,7 +56,7 @@ struct CalendarWidgetEntryView: View {
             eventsByDay: entry.eventsByDay,
             compact: false
         )
-        .padding(8)
+        .padding(0)
     }
 
     private var eventsList: some View {

@@ -52,9 +52,12 @@ struct CalendarProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<CalendarEntry>) -> Void) {
         let currentDate = Date()
-        let entry = createEntry(for: currentDate)
-
         let calendar = Calendar.current
+        let monthOffset = MonthOffsetStore.currentOffset
+        let displayDate = calendar.date(byAdding: .month, value: monthOffset, to: currentDate) ?? currentDate
+
+        let entry = createEntry(for: displayDate)
+
         let nextMidnight = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: currentDate)!)
 
         let timeline = Timeline(entries: [entry], policy: .after(nextMidnight))
