@@ -2,6 +2,7 @@ import SwiftUI
 import EventKit
 import WidgetKit
 import os.log
+import ServiceManagement
 
 private let logger = Logger(subsystem: "com.harshilchordia.CalendarWidget", category: "AppDelegate")
 
@@ -37,6 +38,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let callback: CFNotificationCallback = { _, _, name, _, _ in
             let n = name?.rawValue as String? ?? "unknown"
             logger.info("Darwin notification received: \(n)")
+            // Reset stale pagination state
+            UserDefaults.standard.removeObject(forKey: "calendarWidgetEventPages")
             WidgetCenter.shared.reloadTimelines(ofKind: "CalendarWidget")
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 WidgetCenter.shared.reloadTimelines(ofKind: "CalendarWidget")
@@ -51,10 +54,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             "_CalDatabaseChangedNotification" as CFString, nil, .deliverImmediately)
 
         logger.info("Observing Darwin + EKEventStoreChanged notifications")
+
+        // Register to launch at login
+        do {
+            try SMAppService.mainApp.register()
+            logger.info("Registered for launch at login")
+        } catch {
+            logger.warning("Failed to register launch at login: \(error.localizedDescription)")
+        }
     }
 
     @objc private func calendarChanged(_ notification: Notification) {
         logger.info("EKEventStoreChanged fired, reloading widget")
+        UserDefaults.standard.removeObject(forKey: "calendarWidgetEventPages")
         WidgetCenter.shared.reloadTimelines(ofKind: "CalendarWidget")
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             WidgetCenter.shared.reloadTimelines(ofKind: "CalendarWidget")
