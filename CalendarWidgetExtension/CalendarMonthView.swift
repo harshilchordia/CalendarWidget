@@ -132,10 +132,10 @@ struct CalendarFullMonthView: View {
     private let eventCardColor = Color(red: 0.2, green: 0.5, blue: 0.9)
     private let gridLineColor = Color.white.opacity(0.1)
 
-    private var headerSize: CGFloat { compact ? 14 : 16 }
-    private var weekdaySize: CGFloat { compact ? 9 : 10 }
-    private var dayNumberSize: CGFloat { compact ? 11 : 11 }
-    private var todayCircleSize: CGFloat { compact ? 18 : 20 }
+    private var headerSize: CGFloat { compact ? 11 : 12 }
+    private var weekdaySize: CGFloat { compact ? 8 : 9 }
+    private var dayNumberSize: CGFloat { compact ? 9 : 9 }
+    private var todayCircleSize: CGFloat { compact ? 14 : 14 }
     private var eventTitleSize: CGFloat { compact ? 8 : 9 }
     private var eventTimeSize: CGFloat { compact ? 7 : 8 }
     private var maxEventsPerCell: Int { compact ? 2 : 3 }
@@ -151,9 +151,11 @@ struct CalendarFullMonthView: View {
 
     private var monthHeader: some View {
         HStack {
+            Spacer()
+
             Button(intent: ChangeMonthIntent(offset: -1)) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(.white)
             }
             .buttonStyle(.plain)
@@ -164,21 +166,21 @@ struct CalendarFullMonthView: View {
 
             Button(intent: ChangeMonthIntent(offset: 1)) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(.white)
             }
             .buttonStyle(.plain)
 
-            Spacer()
-
             Button(intent: ResetMonthIntent()) {
                 Text("Today")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundColor(.white.opacity(0.7))
             }
             .buttonStyle(.plain)
+
+            Spacer()
         }
-        .padding(.bottom, 4)
+        .padding(.bottom, 2)
     }
 
     private var weekdayHeader: some View {
@@ -190,15 +192,14 @@ struct CalendarFullMonthView: View {
                     .frame(maxWidth: .infinity)
             }
         }
-        .padding(.bottom, 3)
+        .padding(.bottom, 2)
     }
 
     private var weeksGrid: some View {
         let weeks = computeWeeks()
         return GeometryReader { geo in
             let rowCount = CGFloat(weeks.count)
-            let separatorTotal = (rowCount - 1) * 0.5
-            let rowHeight = (geo.size.height - separatorTotal) / rowCount
+            let rowHeight = geo.size.height / rowCount
 
             VStack(spacing: 0) {
                 ForEach(0..<weeks.count, id: \.self) { weekIndex in
@@ -208,17 +209,7 @@ struct CalendarFullMonthView: View {
                             dayCellFull(dayItem)
                                 .frame(height: rowHeight)
                                 .clipped()
-                            if dayIndex < 6 {
-                                Rectangle()
-                                    .fill(gridLineColor)
-                                    .frame(width: 0.5, height: rowHeight)
-                            }
                         }
-                    }
-                    if weekIndex < weeks.count - 1 {
-                        Rectangle()
-                            .fill(gridLineColor)
-                            .frame(height: 0.5)
                     }
                 }
             }
@@ -280,9 +271,9 @@ struct CalendarFullMonthView: View {
         HStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 2)
                 .fill(eventCardColor)
-                .frame(width: 3)
+                .frame(width: 2)
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(event.title)
                     .font(.system(size: eventTitleSize, weight: .medium))
                     .lineLimit(1)
@@ -292,17 +283,18 @@ struct CalendarFullMonthView: View {
                     Text(event.shortTime)
                         .font(.system(size: eventTimeSize))
                         .foregroundColor(.cyan.opacity(0.7))
+                        .lineLimit(1)
                 }
             }
-            .padding(.leading, 4)
+            .padding(.leading, 3)
         }
-        .padding(.vertical, 2)
-        .padding(.horizontal, 3)
+        .padding(.vertical, 1)
+        .padding(.horizontal, 2)
         .background(
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: 3)
                 .fill(eventCardColor.opacity(0.2))
         )
-        .padding(.horizontal, 2)
+        .padding(.horizontal, 1)
     }
 
     private func isWeekendIndex(_ index: Int) -> Bool {
@@ -348,6 +340,19 @@ struct CalendarFullMonthView: View {
         for i in stride(from: 0, to: allDays.count, by: 7) {
             weeks.append(Array(allDays[i..<min(i + 7, allDays.count)]))
         }
+
+        // Show 3 weeks starting from the current week
+        if isCurrentMonth, weeks.count > 3 {
+            let currentWeekIndex = weeks.firstIndex(where: { week in
+                week.contains(where: { $0.isToday })
+            }) ?? 0
+            let start = currentWeekIndex
+            let end = min(start + 3, weeks.count)
+            return Array(weeks[start..<end])
+        } else if weeks.count > 3 {
+            return Array(weeks.prefix(3))
+        }
+
         return weeks
     }
 }

@@ -47,7 +47,8 @@ struct CalendarWidgetEntryView: View {
             eventsByDay: entry.eventsByDay,
             compact: false
         )
-        .padding(0)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 12)
     }
 
     private var extraLargeWidget: some View {
@@ -56,7 +57,8 @@ struct CalendarWidgetEntryView: View {
             eventsByDay: entry.eventsByDay,
             compact: false
         )
-        .padding(0)
+        .padding(.horizontal, 1)
+        .padding(.vertical, 6)
     }
 
     private var eventsList: some View {
@@ -121,6 +123,7 @@ struct CalendarMonthWidget: Widget {
             CalendarWidgetEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
+        .contentMarginsDisabled()
         .configurationDisplayName("Calendar")
         .description("View your month at a glance with upcoming events.")
         .supportedFamilies(supportedFamilies)
