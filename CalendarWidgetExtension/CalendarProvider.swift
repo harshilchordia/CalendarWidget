@@ -7,6 +7,7 @@ struct CalendarEntry: TimelineEntry {
     let eventDays: Set<Int>
     let eventsByDay: [String: [SimpleEvent]]
     let upcomingEvents: [SimpleEvent]
+    let eventPages: [String: Int]
 }
 
 struct SimpleEvent: Identifiable {
@@ -43,7 +44,8 @@ struct CalendarProvider: TimelineProvider {
             upcomingEvents: [
                 SimpleEvent(id: "1", title: "BACA CHESS SOCIAL", startDate: Date(), isAllDay: false),
                 SimpleEvent(id: "2", title: "Thank F*** It's Friday", startDate: Date(), isAllDay: false)
-            ]
+            ],
+            eventPages: [:]
         )
     }
 
@@ -109,7 +111,8 @@ struct CalendarProvider: TimelineProvider {
             monthDate: date,
             eventDays: eventDays,
             eventsByDay: eventsByDay,
-            upcomingEvents: Array(upcoming)
+            upcomingEvents: Array(upcoming),
+            eventPages: MonthOffsetStore.allEventPages
         )
     }
 }

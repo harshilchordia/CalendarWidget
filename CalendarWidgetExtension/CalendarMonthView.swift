@@ -123,6 +123,7 @@ struct CalendarFullMonthView: View {
     let currentDate: Date
     let eventsByDay: [String: [SimpleEvent]]
     var compact: Bool = false
+    var eventPages: [String: Int] = [:]
 
     private let calendar = Calendar.current
     private let weekdaySymbols = Calendar.current.shortWeekdaySymbols
@@ -145,7 +146,7 @@ struct CalendarFullMonthView: View {
 
     private var headerSize: CGFloat { compact ? 11 : 12 }
     private var weekdaySize: CGFloat { compact ? 8 : 9 }
-    private var dayNumberSize: CGFloat { compact ? 9 : 9 }
+    private var dayNumberSize: CGFloat { compact ? 10 : 11 }
     private var todayCircleSize: CGFloat { compact ? 14 : 14 }
     private var eventTitleSize: CGFloat { compact ? 8 : 9 }
     private var eventTimeSize: CGFloat { compact ? 7 : 8 }
@@ -244,7 +245,8 @@ struct CalendarFullMonthView: View {
     private func dayCellFull(_ dayItem: DayItem) -> some View {
         GeometryReader { geo in
             let dayHeight: CGFloat = todayCircleSize + 4
-            let eventsHeight = max(0, geo.size.height - dayHeight)
+            let buttonHeight: CGFloat = 16
+            let eventsHeight = geo.size.height - dayHeight
 
             VStack(alignment: .center, spacing: 0) {
                 // Day number - always visible at top
@@ -280,21 +282,36 @@ struct CalendarFullMonthView: View {
                 .padding(.top, 2)
                 .frame(height: dayHeight)
 
-                // Events for this day - constrained to remaining space
+                // Events for this day - fixed height container
                 if dayItem.day != 0, let events = eventsByDay[dayItem.dateKey] {
+                    let page = eventPages[dayItem.dateKey] ?? 0
+                    let startIndex = page * maxEventsPerCell
+                    let endIndex = min(startIndex + maxEventsPerCell, events.count)
+                    let visibleEvents = Array(events[startIndex..<endIndex])
+                    let totalPages = (events.count + maxEventsPerCell - 1) / maxEventsPerCell
+                    let hasPages = totalPages > 1
+
                     VStack(spacing: 1) {
-                        ForEach(events.prefix(maxEventsPerCell)) { event in
+                        ForEach(visibleEvents) { event in
                             eventCard(event)
                         }
-                        if events.count > maxEventsPerCell {
-                            Text("+\(events.count - maxEventsPerCell) more")
-                                .font(.system(size: eventTimeSize))
-                                .foregroundColor(.white.opacity(0.5))
-                        }
+                        Spacer(minLength: 0)
                     }
-                }
+                    .frame(height: hasPages ? eventsHeight - buttonHeight : eventsHeight)
 
-                Spacer(minLength: 0)
+                    if hasPages {
+                        Button(intent: ShowMoreEventsIntent(dateKey: dayItem.dateKey, totalEvents: events.count, pageSize: maxEventsPerCell)) {
+                            Text("\(page + 1)/\(totalPages)")
+                                .font(.system(size: eventTimeSize + 2, weight: .medium))
+                                .foregroundColor(.white.opacity(0.6))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.plain)
+                        .frame(height: buttonHeight)
+                    }
+                } else {
+                    Spacer(minLength: 0)
+                }
             }
             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }

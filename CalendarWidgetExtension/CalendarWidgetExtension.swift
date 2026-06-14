@@ -45,7 +45,8 @@ struct CalendarWidgetEntryView: View {
         CalendarFullMonthView(
             currentDate: entry.monthDate,
             eventsByDay: entry.eventsByDay,
-            compact: false
+            compact: false,
+            eventPages: entry.eventPages
         )
         .padding(.horizontal, 6)
         .padding(.vertical, 12)
@@ -55,7 +56,8 @@ struct CalendarWidgetEntryView: View {
         CalendarFullMonthView(
             currentDate: entry.monthDate,
             eventsByDay: entry.eventsByDay,
-            compact: false
+            compact: false,
+            eventPages: entry.eventPages
         )
         .padding(.horizontal, 1)
         .padding(.vertical, 6)
@@ -155,6 +157,7 @@ struct CalendarMonthWidget: Widget {
             SimpleEvent(id: "1", title: "BACA CHESS SOCIAL", startDate: Date(), isAllDay: false),
             SimpleEvent(id: "2", title: "Thank F*** It's Friday", startDate: Date().addingTimeInterval(3600), isAllDay: false),
             SimpleEvent(id: "3", title: "tag in regents park", startDate: Date().addingTimeInterval(7200), isAllDay: false)
-        ]
+        ],
+        eventPages: [:]
     )
 }
