@@ -11,7 +11,8 @@ struct CalendarEvent: Identifiable {
 }
 
 final class CalendarEventService {
-    private let eventStore = EKEventStore()
+    // Create a fresh store each time to avoid stale cached data
+    private var eventStore: EKEventStore { EKEventStore() }
 
     func requestAccess() async -> Bool {
         do {

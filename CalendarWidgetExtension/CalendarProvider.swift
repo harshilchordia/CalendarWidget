@@ -60,9 +60,10 @@ struct CalendarProvider: TimelineProvider {
 
         let entry = createEntry(for: startDay)
 
-        let nextMidnight = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: currentDate)!)
+        // Refresh every 15 minutes to pick up calendar changes
+        let refreshDate = calendar.date(byAdding: .minute, value: 15, to: currentDate)!
 
-        let timeline = Timeline(entries: [entry], policy: .after(nextMidnight))
+        let timeline = Timeline(entries: [entry], policy: .after(refreshDate))
         completion(timeline)
     }
 

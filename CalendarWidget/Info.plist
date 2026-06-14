@@ -4,5 +4,7 @@
 <dict>
     <key>NSCalendarsUsageDescription</key>
     <string>Calendar Widget needs access to your calendars to display events on the widget.</string>
+    <key>LSUIElement</key>
+    <true/>
 </dict>
 </plist>
