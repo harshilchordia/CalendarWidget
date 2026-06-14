@@ -2,10 +2,10 @@ import AppIntents
 import WidgetKit
 
 struct ChangeMonthIntent: AppIntent {
-    static var title: LocalizedStringResource = "Change Month"
-    static var description = IntentDescription("Navigate to a different month in the calendar widget.")
+    static var title: LocalizedStringResource = "Change Week"
+    static var description = IntentDescription("Navigate by week in the calendar widget.")
 
-    @Parameter(title: "Month Offset")
+    @Parameter(title: "Week Offset")
     var offset: Int
 
     init() {
@@ -25,8 +25,8 @@ struct ChangeMonthIntent: AppIntent {
 }
 
 struct ResetMonthIntent: AppIntent {
-    static var title: LocalizedStringResource = "Reset to Current Month"
-    static var description = IntentDescription("Return to the current month in the calendar widget.")
+    static var title: LocalizedStringResource = "Reset to Today"
+    static var description = IntentDescription("Return to today in the calendar widget.")
 
     func perform() async throws -> some IntentResult {
         MonthOffsetStore.currentOffset = 0
@@ -36,7 +36,7 @@ struct ResetMonthIntent: AppIntent {
 }
 
 enum MonthOffsetStore {
-    private static let key = "calendarWidgetMonthOffset"
+    private static let key = "calendarWidgetWeekOffset"
 
     static var currentOffset: Int {
         get { UserDefaults.standard.integer(forKey: key) }

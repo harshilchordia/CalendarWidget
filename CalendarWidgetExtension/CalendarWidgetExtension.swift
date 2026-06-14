@@ -146,9 +146,9 @@ struct CalendarMonthWidget: Widget {
         monthDate: Date(),
         eventDays: [3, 7, 12, 15, 20, 25],
         eventsByDay: [
-            12: [SimpleEvent(id: "1", title: "BACA CHESS SOCIAL", startDate: Date(), isAllDay: false),
+            "2025-06-25": [SimpleEvent(id: "1", title: "BACA CHESS SOCIAL", startDate: Date(), isAllDay: false),
                  SimpleEvent(id: "2", title: "Thank F*** It's Friday", startDate: Date(), isAllDay: false)],
-            13: [SimpleEvent(id: "3", title: "tag in regents park", startDate: Date(), isAllDay: false),
+            "2025-06-26": [SimpleEvent(id: "3", title: "tag in regents park", startDate: Date(), isAllDay: false),
                  SimpleEvent(id: "4", title: "picnic @ greenwich", startDate: Date().addingTimeInterval(7200), isAllDay: false)]
         ],
         upcomingEvents: [

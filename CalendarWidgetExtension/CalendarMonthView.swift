@@ -107,11 +107,11 @@ struct CalendarMonthView: View {
         var items: [DayItem] = []
 
         for _ in 0..<offsetDays {
-            items.append(DayItem(day: 0, isToday: false))
+            items.append(DayItem(day: 0, isToday: false, monthLabel: nil, dateKey: "", isWeekend: false))
         }
 
         for day in range {
-            items.append(DayItem(day: day, isToday: isCurrentMonth && day == today))
+            items.append(DayItem(day: day, isToday: isCurrentMonth && day == today, monthLabel: nil, dateKey: "", isWeekend: false))
         }
 
         return items
@@ -121,16 +121,27 @@ struct CalendarMonthView: View {
 // MARK: - Full month grid with inline events (large/extra-large widget)
 struct CalendarFullMonthView: View {
     let currentDate: Date
-    let eventsByDay: [Int: [SimpleEvent]]
+    let eventsByDay: [String: [SimpleEvent]]
     var compact: Bool = false
 
     private let calendar = Calendar.current
     private let weekdaySymbols = Calendar.current.shortWeekdaySymbols
 
+    private static let monthYearFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM yyyy"
+        return f
+    }()
+    private static let dateKeyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
     // Colors matching Apple Calendar dark theme
     private let todayColor = Color.red
     private let eventCardColor = Color(red: 0.2, green: 0.5, blue: 0.9)
-    private let gridLineColor = Color.white.opacity(0.1)
+    private let gridLineColor = Color.white.opacity(0.001)
 
     private var headerSize: CGFloat { compact ? 11 : 12 }
     private var weekdaySize: CGFloat { compact ? 8 : 9 }
@@ -153,7 +164,7 @@ struct CalendarFullMonthView: View {
         HStack {
             Spacer()
 
-            Button(intent: ChangeMonthIntent(offset: -1)) {
+            Button(intent: ChangeMonthIntent(offset: -3)) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(.white)
@@ -164,7 +175,7 @@ struct CalendarFullMonthView: View {
                 .font(.system(size: headerSize, weight: .bold))
                 .foregroundColor(.white)
 
-            Button(intent: ChangeMonthIntent(offset: 1)) {
+            Button(intent: ChangeMonthIntent(offset: 3)) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(.white)
@@ -184,11 +195,17 @@ struct CalendarFullMonthView: View {
     }
 
     private var weekdayHeader: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(weekdaySymbols.enumerated()), id: \.offset) { index, symbol in
+        let weekOffset = MonthOffsetStore.currentOffset
+        let startDay = calendar.date(byAdding: .day, value: weekOffset * 7, to: Date()) ?? Date()
+        let startWeekdayIndex = calendar.component(.weekday, from: startDay) - 1
+        let reorderedSymbols = (0..<7).map { i in
+            weekdaySymbols[(startWeekdayIndex + i) % 7]
+        }
+        return HStack(spacing: 0) {
+            ForEach(Array(reorderedSymbols.enumerated()), id: \.offset) { index, symbol in
                 Text(symbol.uppercased())
                     .font(.system(size: weekdaySize, weight: .semibold))
-                    .foregroundColor(isWeekendIndex(index) ? Color.white.opacity(0.5) : Color.white.opacity(0.7))
+                    .foregroundColor(.white.opacity(0.7))
                     .frame(maxWidth: .infinity)
             }
         }
@@ -203,11 +220,18 @@ struct CalendarFullMonthView: View {
 
             VStack(spacing: 0) {
                 ForEach(0..<weeks.count, id: \.self) { weekIndex in
+                    if weekIndex > 0 {
+                        Divider().background(gridLineColor)
+                    }
                     HStack(spacing: 0) {
                         ForEach(0..<7, id: \.self) { dayIndex in
+                            if dayIndex > 0 {
+                                Divider().background(gridLineColor)
+                            }
                             let dayItem = weeks[weekIndex][dayIndex]
                             dayCellFull(dayItem)
                                 .frame(height: rowHeight)
+                                .background(dayItem.isWeekend ? Color.white.opacity(0.04) : Color.clear)
                                 .clipped()
                         }
                     }
@@ -227,11 +251,22 @@ struct CalendarFullMonthView: View {
                 Group {
                     if dayItem.day != 0 {
                         if dayItem.isToday {
-                            Text("\(dayItem.day)")
-                                .font(.system(size: dayNumberSize, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: todayCircleSize, height: todayCircleSize)
-                                .background(Circle().fill(todayColor))
+                            VStack(spacing: 1) {
+                                Text("\(dayItem.day)")
+                                    .font(.system(size: dayNumberSize + 1, weight: .bold))
+                                    .foregroundColor(.white)
+                                Rectangle()
+                                    .fill(Color.white)
+                                    .frame(width: 14, height: 2)
+                            }
+                            .frame(height: todayCircleSize + 2)
+                        } else if let label = dayItem.monthLabel {
+                            VStack(spacing: 0) {
+                                Text("\(dayItem.day) \(label)")
+                                    .font(.system(size: dayNumberSize, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                            .frame(height: todayCircleSize)
                         } else {
                             Text("\(dayItem.day)")
                                 .font(.system(size: dayNumberSize, weight: .regular))
@@ -246,7 +281,7 @@ struct CalendarFullMonthView: View {
                 .frame(height: dayHeight)
 
                 // Events for this day - constrained to remaining space
-                if dayItem.day != 0, let events = eventsByDay[dayItem.day] {
+                if dayItem.day != 0, let events = eventsByDay[dayItem.dateKey] {
                     VStack(spacing: 1) {
                         ForEach(events.prefix(maxEventsPerCell)) { event in
                             eventCard(event)
@@ -257,8 +292,6 @@ struct CalendarFullMonthView: View {
                                 .foregroundColor(.white.opacity(0.5))
                         }
                     }
-                    .frame(maxHeight: eventsHeight, alignment: .top)
-                    .clipped()
                 }
 
                 Spacer(minLength: 0)
@@ -268,10 +301,10 @@ struct CalendarFullMonthView: View {
     }
 
     private func eventCard(_ event: SimpleEvent) -> some View {
-        HStack(spacing: 0) {
+        HStack(alignment: .top, spacing: 0) {
             RoundedRectangle(cornerRadius: 2)
                 .fill(eventCardColor)
-                .frame(width: 2)
+                .frame(width: 2, height: 14)
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(event.title)
@@ -287,9 +320,13 @@ struct CalendarFullMonthView: View {
                 }
             }
             .padding(.leading, 3)
+
+            Spacer(minLength: 0)
         }
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, 1)
         .padding(.horizontal, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 3)
                 .fill(eventCardColor.opacity(0.2))
@@ -304,53 +341,36 @@ struct CalendarFullMonthView: View {
     }
 
     private var monthYearString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: currentDate)
+        let weekOffset = MonthOffsetStore.currentOffset
+        let startDay = calendar.date(byAdding: .day, value: weekOffset * 7, to: Date()) ?? Date()
+        return Self.monthYearFormatter.string(from: startDay)
     }
 
     private func computeWeeks() -> [[DayItem]] {
-        guard let range = calendar.range(of: .day, in: .month, for: currentDate),
-              let firstDayOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
-            return []
-        }
-
-        let firstWeekday = calendar.component(.weekday, from: firstDayOfMonth)
-        let offsetDays = (firstWeekday - calendar.firstWeekday + 7) % 7
-        let today = calendar.component(.day, from: Date())
-        let isCurrentMonth = calendar.isDate(currentDate, equalTo: Date(), toGranularity: .month)
+        let today = Date()
+        let weekOffset = MonthOffsetStore.currentOffset
+        let startDay = calendar.date(byAdding: .day, value: weekOffset * 7, to: today) ?? today
+        let startMonth = calendar.component(.month, from: startDay)
 
         var allDays: [DayItem] = []
 
-        for _ in 0..<offsetDays {
-            allDays.append(DayItem(day: 0, isToday: false))
+        let shortMonths = calendar.shortMonthSymbols
+
+        for offset in 0..<21 {
+            guard let date = calendar.date(byAdding: .day, value: offset, to: startDay) else { continue }
+            let day = calendar.component(.day, from: date)
+            let month = calendar.component(.month, from: date)
+            let isToday = calendar.isDateInToday(date)
+            let monthLabel: String? = (month != startMonth && day == 1) ? shortMonths[month - 1] : nil
+            let dateKey = Self.dateKeyFormatter.string(from: date)
+            let isWeekend = calendar.isDateInWeekend(date)
+            allDays.append(DayItem(day: day, isToday: isToday, monthLabel: monthLabel, dateKey: dateKey, isWeekend: isWeekend))
         }
 
-        for day in range {
-            allDays.append(DayItem(day: day, isToday: isCurrentMonth && day == today))
-        }
-
-        // Pad to fill last week
-        while allDays.count % 7 != 0 {
-            allDays.append(DayItem(day: 0, isToday: false))
-        }
-
-        // Split into weeks
+        // Split into 3 weeks of 7 days
         var weeks: [[DayItem]] = []
         for i in stride(from: 0, to: allDays.count, by: 7) {
             weeks.append(Array(allDays[i..<min(i + 7, allDays.count)]))
-        }
-
-        // Show 3 weeks starting from the current week
-        if isCurrentMonth, weeks.count > 3 {
-            let currentWeekIndex = weeks.firstIndex(where: { week in
-                week.contains(where: { $0.isToday })
-            }) ?? 0
-            let start = currentWeekIndex
-            let end = min(start + 3, weeks.count)
-            return Array(weeks[start..<end])
-        } else if weeks.count > 3 {
-            return Array(weeks.prefix(3))
         }
 
         return weeks
@@ -360,4 +380,7 @@ struct CalendarFullMonthView: View {
 struct DayItem: Hashable {
     let day: Int
     let isToday: Bool
+    let monthLabel: String?
+    let dateKey: String
+    let isWeekend: Bool
 }
